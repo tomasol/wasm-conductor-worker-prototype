@@ -1,0 +1,33 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+plugins {
+	id 'org.springframework.boot' version '2.3.0.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'java'
+}
+
+group = 'prototype'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '14'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation("com.netflix.conductor:conductor-client:${conductorClientVersion}") {
+		exclude group: 'com.github.vmg.protogen', module: 'protogen-annotations'
+	}
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+dependencyManagement {
+	imports { mavenBom(SpringBootPlugin.BOM_COORDINATES) }
+}
