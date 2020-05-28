@@ -12,29 +12,22 @@ public class NativeProcessManager implements ProcessManager {
     private static final Logger logger = LoggerFactory.getLogger(NativeProcessManager.class);
 
     @Override
-    public String execute(List<String> cmd, long timeout, TimeUnit unit) throws
+    public ExecutionResult execute(List<String> cmd, long timeout, TimeUnit unit) throws
             InterruptedException,
             IOException,
-            NonZeroExitStatusException,
             TimeoutException {
         logger.debug("Executing {}", cmd);
         ProcessBuilder processBuilder = new ProcessBuilder(cmd);
         Process process = processBuilder.start();
         boolean hasExitted = process.waitFor(timeout, unit);
         if (hasExitted) {
-            if (process.exitValue() == 0) {
-                // success!
-                String stdOut = new String(process.getInputStream().readAllBytes());
-                // wasmtime appends \n, remove it
-                if (stdOut.endsWith("\n")) {
-                    stdOut = stdOut.substring(0, stdOut.length() - 1);
-                }
-                return stdOut;
-            } else {
-                String stdErr = new String(process.getErrorStream().readAllBytes());
-                logger.debug("Wrong exit value {}, stderr: {}", process.exitValue(), stdErr);
-                throw new NonZeroExitStatusException(process.exitValue());
+            String stdOut = new String(process.getInputStream().readAllBytes());
+            String stdErr = new String(process.getErrorStream().readAllBytes());
+            // wasmtime appends \n, remove it
+            if (stdOut.endsWith("\n")) {
+                stdOut = stdOut.substring(0, stdOut.length() - 1);
             }
+            return new ExecutionResult(process.exitValue(), stdOut, stdErr);
         } else {
             process.destroyForcibly();
             throw new TimeoutException();

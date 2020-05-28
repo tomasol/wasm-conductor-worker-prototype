@@ -1,1 +1,2 @@
-wasmtime run --invoke fib ./fib.wasm 3
+set -xe
+wasmtime run --invoke fib ./fib.wasm 7

@@ -6,13 +6,41 @@ import java.util.concurrent.TimeUnit;
 
 public interface ProcessManager {
 
-    String execute(List<String> cmd, long timeout, TimeUnit unit)
+    ExecutionResult execute(List<String> cmd, long timeout, TimeUnit unit)
             throws
             InterruptedException,
             IOException,
             NonZeroExitStatusException,
             TimeoutException
             ;
+
+
+    class ExecutionResult {
+        private final int exitStatus;
+        private final String stdOut, stdErr;
+
+        public ExecutionResult(int exitStatus, String stdOut, String stdErr) {
+            this.exitStatus = exitStatus;
+            this.stdOut = stdOut;
+            this.stdErr = stdErr;
+        }
+
+        public int getExitStatus() {
+            return exitStatus;
+        }
+
+        public String getStdOut() {
+            return stdOut;
+        }
+
+        public String getStdErr() {
+            return stdErr;
+        }
+
+        public boolean isSuccess() {
+            return exitStatus == 0;
+        }
+    }
 
     class NonZeroExitStatusException extends Exception {
         final int exitStatus;

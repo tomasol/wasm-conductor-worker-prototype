@@ -10,6 +10,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +20,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import prototype.wasmworker.proc.ProcessManager;
+import prototype.wasmworker.proc.ProcessManager.ExecutionResult;
 import prototype.wasmworker.proc.ProcessManager.NonZeroExitStatusException;
 import prototype.wasmworker.proc.ProcessManager.TimeoutException;
 
 @Component
 public class WasmWorker implements Worker {
-    private static final Logger logger = LoggerFactory.getLogger(WasmWorker.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private final long maxWaitMillis;
     private final ObjectMapper objectMapper;
     private final ProcessManager manager;
@@ -95,7 +97,7 @@ public class WasmWorker implements Worker {
         cmd.add(wasmFileName);
 
         TaskResult taskResult = new TaskResult(task);
-        taskResult.getOutputData().put("cmd", cmd);
+        taskResult.log(String.format("Executing %s", cmd));
 
         try {
             addArgs(maybeArgs, cmd);
@@ -112,15 +114,21 @@ public class WasmWorker implements Worker {
         }
 
         try {
-            String stdOut = manager.execute(cmd, maxWaitMillis, TimeUnit.MILLISECONDS);
+            ExecutionResult executionResult = manager.execute(cmd, maxWaitMillis, TimeUnit.MILLISECONDS);
             if (outputIsJson) {
                 // TODO test if this is correct
-                Map result = objectMapper.readValue(stdOut, Map.class);
+                Map result = objectMapper.readValue(executionResult.getStdOut(), Map.class);
                 taskResult.getOutputData().put("result", result);
             } else {
-                taskResult.getOutputData().put("result", stdOut);
+                taskResult.getOutputData().put("result", executionResult.getStdOut());
             }
-            taskResult.setStatus(Status.COMPLETED);
+            // add logs
+            taskResult.log(executionResult.getStdErr());
+            if (executionResult.isSuccess()) {
+                taskResult.setStatus(Status.COMPLETED);
+            } else {
+                taskResult.setStatus(Status.FAILED);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             taskResult.getOutputData().put("error.reason", "interrupted");

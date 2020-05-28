@@ -44,14 +44,14 @@ public class WasmWorkerIT {
         Map<String, Object> inputData = Maps.newHashMap("args", "{\"name\":\"foo\"}");
         TaskResult result = execute(classPathToWasm, inputData);
         assertEquals(Status.COMPLETED, result.getStatus());
-        String expectedResult = "String(\"foo\")";
+        String expectedResult = "{\"name\":\"foo\",\"name_length\":3}";
         assertEquals(expectedResult, result.getOutputData().get("result"));
     }
 
     @Test
     public void testWasmInterfaceTypes() {
         String classPathToWasm = "/fib/fib.wasm";
-        Map<String, Object> inputData = Maps.newHashMap("args", "3");
+        Map<String, Object> inputData = Maps.newHashMap("args", "5");
         inputData.put("function", "fib");
         TaskResult result = execute(classPathToWasm, inputData);
         assertEquals(Status.COMPLETED, result.getStatus());
