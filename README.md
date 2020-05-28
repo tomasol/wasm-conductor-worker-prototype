@@ -12,12 +12,15 @@ Two example wasm projects are supplied:
 
 See READMEs for more info.
 
-## Start the worker server
+
+## Running the example
+
+### Start the worker server
 ```shell script
 CONDUCTOR_API="http://localhost:8080/api"
 ./gradlew -Dconductor.url="${CONDUCTOR_API}" bootRun
 ```
-## Create taskdef
+### Create taskdef
 ```shell script
  
 curl -X POST -v \
@@ -39,7 +42,7 @@ curl -X POST -v \
 '
 ```
 
-## Create new workflow with two raw tasks
+### Create new workflow with two raw tasks
 Add `wasi_ref` raw json task to the workflow:
 ```json
 {
@@ -97,3 +100,11 @@ Optionally replace hardcoded `ref_wasi` name parameter with following:
       "name": "${workflow.input.enter_your_name}"
     },
 ```
+
+## Input parameters of wasm task
+* `function` - name of the function if wasm file was compiled using 
+[interface-types](https://github.com/WebAssembly/interface-types/blob/master/proposals/interface-types/Explainer.md)
+* `wasmFileName` - path to wasm file to be executed.
+* `args` - can be string, json or array of strings. This will be serialized to array of strings and passed to `wasmtime`. 
+* `dryRun` - if set to `true`, `wasmtime` will not be executed.
+* `outputIsJson` - if set to `true`, output will be interpreted as JSON.
