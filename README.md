@@ -9,6 +9,7 @@ This worker executes local wasm files.
 Two example wasm projects are supplied:
 * `src/test/resources/fib/` 
 * `src/test/resources/wasi/`
+
 See READMEs for more info.
 
 ## Start the worker server
@@ -54,6 +55,7 @@ Add `wasi_ref` raw json task to the workflow:
   "type": "SIMPLE"
 }
 ```
+
 Add `fib_ref` task taking values from first:
 ```json
  {
@@ -85,4 +87,13 @@ Output of `ref_fib` should be:
 {
    "result": "3"
 }
+```
+because `fib(4) = 3`.
+
+Optionally replace hardcoded `ref_wasi` name parameter with following:
+
+```json
+    "args": {
+      "name": "${workflow.input.enter_your_name}"
+    },
 ```
