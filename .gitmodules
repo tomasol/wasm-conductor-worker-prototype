@@ -1,0 +1,3 @@
+[submodule "src/main/resources/boa-wasi/crates/boa"]
+	path = src/main/resources/boa-wasi/crates/boa
+	url = https://github.com/boa-dev/boa.git
