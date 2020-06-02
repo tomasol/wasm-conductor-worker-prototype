@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 public interface ProcessManager {
 
-    ExecutionResult execute(List<String> cmd, long timeout, TimeUnit unit)
+    ExecutionResult execute(List<String> cmd, String stdIn, long timeout, TimeUnit unit)
             throws
             InterruptedException,
             IOException,

@@ -1,5 +1,6 @@
 package prototype.wasmworker;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -86,18 +87,19 @@ public class WasmWorker implements Worker {
         Object maybeArgs = task.getInputData().get("args");
         boolean dryRun = Boolean.parseBoolean((String) task.getInputData().get("dryRun"));
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
+        String stdIn = (String) task.getInputData().get("stdIn");
 
         List<String> cmd = Lists.newArrayList("wasmtime", "run");
+
+        cmd.add(wasmFileName);
 
         if (!Strings.isNullOrEmpty(functionName)) {
             cmd.add("--invoke");
             cmd.add(functionName);
         }
 
-        cmd.add(wasmFileName);
-
         TaskResult taskResult = new TaskResult(task);
-        taskResult.log(String.format("Executing %s", cmd));
+        taskResult.log(String.format("Executing '%s' with stdIn '%s'", cmd, stdIn));
 
         try {
             addArgs(maybeArgs, cmd);
@@ -114,16 +116,20 @@ public class WasmWorker implements Worker {
         }
 
         try {
-            ExecutionResult executionResult = manager.execute(cmd, maxWaitMillis, TimeUnit.MILLISECONDS);
+            ExecutionResult executionResult = manager.execute(cmd, stdIn, maxWaitMillis, TimeUnit.MILLISECONDS);
             if (outputIsJson) {
-                // TODO test if this is correct
-                Map result = objectMapper.readValue(executionResult.getStdOut(), Map.class);
-                taskResult.getOutputData().put("result", result);
+                try {
+                    Map result = objectMapper.readValue(executionResult.getStdOut(), Map.class);
+                    taskResult.getOutputData().put("result", result);
+                } catch (JsonParseException e) {
+                    taskResult.log("Warning: output is not JSON");
+                    taskResult.getOutputData().put("result", executionResult.getStdOut());
+                }
             } else {
                 taskResult.getOutputData().put("result", executionResult.getStdOut());
             }
             // add logs
-            taskResult.log(executionResult.getStdErr());
+            executionResult.getStdErr().lines().forEach(taskResult::log);
             if (executionResult.isSuccess()) {
                 taskResult.setStatus(Status.COMPLETED);
             } else {

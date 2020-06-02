@@ -8,7 +8,10 @@ use boa::{Executable, Interpreter, Lexer, Parser, Realm};
 // };
 
 pub fn evaluate<ARGS: std::fmt::Debug/* AsRef<str> */>(src: &str, args: &[ARGS]) {
-    let full_script = format!("let args={:?};\n{}", args, src);
+    let full_script = format!("let process = {{argv:{:?}}};\n{}", args, src);
+
+    eprintln!("Executing >>>\n{}\n<<<", full_script);
+
     let mut lexer = Lexer::new(&full_script);
     lexer.lex().unwrap();
         // .map_err(|e| JsValue::from(format!("Syntax Error: {}", e))).unwrap();
@@ -34,7 +37,6 @@ fn main() {
     let mut handle = stdin.lock();
     handle.read_to_string(&mut script).unwrap();
 
-
     let args: Vec<String> = env::args().collect();
-    evaluate(&script, &args[1..]);
+    evaluate(&script, &args);
 }

@@ -17,19 +17,28 @@ See READMEs for more info.
 
 ### Start the worker server
 ```shell script
-CONDUCTOR_API="http://localhost:8080/api"
+CONDUCTOR_API="http://localhost:8080/api" 
 ./gradlew -Dconductor.url="${CONDUCTOR_API}" bootRun
 ```
+
+### Using proxy
+## CURL=curl "http://localhost:8088/proxy/api"
+
 ### Create taskdef
-```shell script
- 
-curl -X POST -v \
-  ${CONDUCTOR_API}/metadata/taskdefs \
-  -H 'Content-Type: application/json' \
-  -d '
+POST to `metadata/taskdefs`:
+Using proxy : 
+```
+curl \
+-H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
+-H 'Content-Type: application/json' \
+http://localhost:8088/proxy/api/metadata/taskdefs -X POST -d ...
+```
+
+```json
 [
     {
-      "name": "fb-test___wasm",
+      "name": "wasm",
+      "type": "SIMPLE",
       "retryCount": 3,
       "retryLogic": "FIXED",
       "retryDelaySeconds": 10,
@@ -39,41 +48,63 @@ curl -X POST -v \
       "ownerEmail": "foo@bar.baz"
     }
 ]
-'
 ```
 
-### Create new workflow with two raw tasks
-Add `wasi_ref` raw json task to the workflow:
+### Create new workflow wasm-example
+POST to `/metadata/workflow` 
+Using proxy : 
+```
+curl \
+-H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
+-H 'Content-Type: application/json' \
+http://localhost:8088/proxy/api/metadata/workflow -d '
+...
+```
+
 ```json
 {
-  "taskReferenceName": "wasi_ref",
-  "name": "wasm",
-  "inputParameters": {
-    "wasmFileName": "src/test/resources/wasi/wasi.wasm",
-    "function": "",
-    "args": {"name":"John"},
-    "dryRun": "false",
-    "outputIsJson": "true"
-  },
-  "type": "SIMPLE"
+    "name": "wasm-example",
+    "description": "wasm example",
+    "ownerEmail": "foo@bar.baz",
+    "version": 1,
+    "schemaVersion": 2,
+    "tasks": [
+        {
+            "name": "wasm",
+            "taskReferenceName": "wasi_ref",
+            "inputParameters": {
+                "wasmFileName": "src/test/resources/wasi/wasi.wasm",
+                "args": {
+                    "name": "${workflow.input.enter_your_name}"
+                },
+                "dryRun": "false",
+                "outputIsJson": "true"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+        },
+        {
+            "name": "wasm",
+            "taskReferenceName": "boa_ref",
+            "inputParameters": {
+                "wasmFileName": "src/main/resources/boa-wasi/boa-wasi.wasm",
+                "args": "${wasi_ref.output.result}",
+                "outputIsJson": "true",
+                "stdIn": "let json=JSON.parse(process.argv[1]); let length = json.name_length; delete json.name_length; json.name_length = length * 2; console.log(JSON.stringify(json));"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+        }
+    ]
 }
+
 ```
 
-Add `fib_ref` task taking values from first:
-```json
- {
-  "taskReferenceName": "fib_ref",
-  "name": "wasm",
-  "inputParameters": {
-    "wasmFileName": "src/test/resources/fib/fib.wasm",
-    "function": "fib",
-    "args": "${wasi_ref.output.result.name_length}"
-  },
-  "type": "SIMPLE"
-}
-```
-Connect `start` -> `ref_wasi` -> `ref_fib` -> `end`
-and execute the workflow.
+Execute the workflow: TODO
 
 Output of `ref_wasi` should be:
 ```json
