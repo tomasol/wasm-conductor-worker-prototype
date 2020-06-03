@@ -1,4 +1,4 @@
-package prototype.wasmworker;
+package prototype.wasmworker.lifecycle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.client.http.TaskClient;

@@ -15,6 +15,7 @@ import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import prototype.wasmworker.proc.NativeProcessManager;
+import prototype.wasmworker.worker.WasmWorker;
 
 public class WasmWorkerIT {
     private static final ObjectMapper objectMapper = new ObjectMapper();

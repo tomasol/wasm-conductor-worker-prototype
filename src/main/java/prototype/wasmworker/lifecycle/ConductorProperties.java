@@ -1,4 +1,4 @@
-package prototype.wasmworker;
+package prototype.wasmworker.lifecycle;
 
 import org.springframework.stereotype.Component;
 

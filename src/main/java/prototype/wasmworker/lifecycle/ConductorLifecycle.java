@@ -1,4 +1,4 @@
-package prototype.wasmworker;
+package prototype.wasmworker.lifecycle;
 
 import com.netflix.conductor.client.task.WorkflowTaskCoordinator;
 import java.util.concurrent.atomic.AtomicBoolean;

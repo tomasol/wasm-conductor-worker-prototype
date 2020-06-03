@@ -1,4 +1,4 @@
-package prototype.wasmworker;
+package prototype.wasmworker.worker;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,7 +10,6 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import prototype.wasmworker.lifecycle.ConductorProperties;
 import prototype.wasmworker.proc.ProcessManager;
 import prototype.wasmworker.proc.ProcessManager.ExecutionResult;
 import prototype.wasmworker.proc.ProcessManager.NonZeroExitStatusException;
@@ -48,20 +48,6 @@ public class WasmWorker implements Worker {
         return "fb-test___wasm"; // TODO
     }
 
-    private void addArgs(Object maybeArgs, List<String> cmd) throws JsonProcessingException {
-        if (maybeArgs instanceof Map) {
-            // convert to json
-            cmd.add(objectMapper.writeValueAsString(maybeArgs));
-        } else if (maybeArgs instanceof String[]) {
-            cmd.addAll(Arrays.asList((String[]) maybeArgs));
-        } else if (maybeArgs != null) {
-            String arg = String.valueOf(maybeArgs);
-            if (!arg.isEmpty()) {
-                cmd.add(arg);
-            }
-        }
-    }
-
     @Override
     public TaskResult execute(Task task) {
         logger.debug("Executing started {}", task.getTaskId());
@@ -78,6 +64,20 @@ public class WasmWorker implements Worker {
         logger.debug("Executing finished {} : {}", task.getTaskId(), taskResult);
         logger.trace("Executing finished {} : {}", task, taskResult);
         return taskResult;
+    }
+
+    private void addArgs(Object maybeArgs, List<String> cmd) throws JsonProcessingException {
+        if (maybeArgs instanceof Map) {
+            // convert to json
+            cmd.add(objectMapper.writeValueAsString(maybeArgs));
+        } else if (maybeArgs instanceof String[]) {
+            cmd.addAll(Arrays.asList((String[]) maybeArgs));
+        } else if (maybeArgs != null) {
+            String arg = String.valueOf(maybeArgs);
+            if (!arg.isEmpty()) {
+                cmd.add(arg);
+            }
+        }
     }
 
     private TaskResult executeInner(Task task) {
