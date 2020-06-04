@@ -10,7 +10,6 @@ public interface ProcessManager {
             throws
             InterruptedException,
             IOException,
-            NonZeroExitStatusException,
             TimeoutException
             ;
 
@@ -39,18 +38,6 @@ public interface ProcessManager {
 
         public boolean isSuccess() {
             return exitStatus == 0;
-        }
-    }
-
-    class NonZeroExitStatusException extends Exception {
-        final int exitStatus;
-
-        public NonZeroExitStatusException(int exitStatus) {
-            this.exitStatus = exitStatus;
-        }
-
-        public int getExitStatus() {
-            return exitStatus;
         }
     }
 
