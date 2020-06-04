@@ -3,7 +3,7 @@
 This worker executes wasm file with quickjs engine.
 
 ## Prerequisites
-* [wasmtime](https://wasmtime.dev/) on PATH
+* [wasmer](https://wasmer.io/) on PATH
 * java 14
 
 ## Running the example

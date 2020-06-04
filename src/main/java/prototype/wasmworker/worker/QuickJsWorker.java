@@ -121,7 +121,7 @@ public class QuickJsWorker implements Worker {
         File scriptFile = new File(tempDir, SCRIPT_JS);
         Files.asCharSink(scriptFile, StandardCharsets.UTF_8).write(script);
 
-        List<String> cmd = Lists.newArrayList("wasmtime", "run", "--dir=" + tempDir.getAbsolutePath(),
+        List<String> cmd = Lists.newArrayList("wasmer", "run", "--dir=" + tempDir.getAbsolutePath(),
                 quickJsPath, "--", scriptFile.getAbsolutePath());
 
         taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
