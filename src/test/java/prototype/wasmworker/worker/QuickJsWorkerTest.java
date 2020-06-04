@@ -65,4 +65,13 @@ public class QuickJsWorkerTest {
         assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());
         assertEquals("exitStatus:1", taskResult.getReasonForIncompletion());
     }
+
+    @Test
+    public void testOOM() {
+        tested = new QuickJsWorker(20000, objectMapper, new NativeProcessManager());
+        String script = "Array(1e9).fill(0)";
+        TaskResult taskResult = execute(script, null, false);
+        assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());
+        assertEquals("exitStatus:1", taskResult.getReasonForIncompletion());
+    }
 }
