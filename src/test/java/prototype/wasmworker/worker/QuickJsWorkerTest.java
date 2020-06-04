@@ -11,18 +11,23 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import prototype.wasmworker.lifecycle.ConductorProperties;
 import prototype.wasmworker.proc.NativeProcessManager;
 
 public class QuickJsWorkerTest {
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
     QuickJsWorker tested;
+
+    static Function<Long, QuickJsWorker> factory = (Long timemoutMillis) ->
+            new QuickJsWorker(timemoutMillis, objectMapper, new NativeProcessManager(),
+                    ConductorProperties.DEFAULT_QUICKJS_WASM);
 
     @BeforeEach
     public void beforeEach() {
-        tested = new QuickJsWorker(2000, objectMapper, new NativeProcessManager());
+        tested = factory.apply(2000l);
     }
 
     private TaskResult execute(String script, Object args, boolean outputIsJson) {
@@ -68,7 +73,7 @@ public class QuickJsWorkerTest {
 
     @Test
     public void testOOM() {
-        tested = new QuickJsWorker(20000, objectMapper, new NativeProcessManager());
+        tested = factory.apply(20000l);
         String script = "Array(1e9).fill(0)";
         TaskResult taskResult = execute(script, null, false);
         assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());

@@ -38,16 +38,18 @@ public class QuickJsWorker implements Worker {
     private final long maxWaitMillis;
     private final ObjectMapper objectMapper;
     private final ProcessManager manager;
+    private final String quickJsPath;
 
     @Autowired
     public QuickJsWorker(ConductorProperties props, ObjectMapper objectMapper, ProcessManager manager) {
-        this(props.getMaxWaitMillis(), objectMapper, manager);
+        this(props.getMaxWaitMillis(), objectMapper, manager, props.getQuickJsPath());
     }
 
-    QuickJsWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager) {
+    QuickJsWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager, String quickJsPath) {
         this.maxWaitMillis = maxWaitMillis;
         this.objectMapper = objectMapper;
         this.manager = manager;
+        this.quickJsPath = quickJsPath;
     }
 
     @Override
@@ -120,8 +122,7 @@ public class QuickJsWorker implements Worker {
         Files.asCharSink(scriptFile, StandardCharsets.UTF_8).write(script);
 
         List<String> cmd = Lists.newArrayList("wasmtime", "run", "--dir=" + tempDir.getAbsolutePath(),
-                "./src/main/resources/qjs.wasm",//TODO
-                "--", scriptFile.getAbsolutePath());
+                quickJsPath, "--", scriptFile.getAbsolutePath());
 
         taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
