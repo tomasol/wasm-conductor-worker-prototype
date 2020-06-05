@@ -77,19 +77,21 @@ public abstract class AbstractWorker implements Worker {
         try {
             ExecutionResult executionResult = manager.execute(cmd, stdIn,
                     maxWaitMillis, TimeUnit.MILLISECONDS);
+            // add stderr to logs
+            executionResult.getStdErr().lines().forEach(taskResult::log);
+
             if (outputIsJson) {
                 try {
                     Map result = objectMapper.readValue(executionResult.getStdOut(), Map.class);
                     taskResult.getOutputData().put("result", result);
-                } catch (JsonParseException e) {
+                } catch (JsonProcessingException e) {
                     taskResult.log("Warning: output is not JSON");
                     taskResult.getOutputData().put("result", executionResult.getStdOut());
                 }
             } else {
                 taskResult.getOutputData().put("result", executionResult.getStdOut());
             }
-            // add logs
-            executionResult.getStdErr().lines().forEach(taskResult::log);
+
             if (executionResult.isSuccess()) {
                 taskResult.setStatus(Status.COMPLETED);
             } else {

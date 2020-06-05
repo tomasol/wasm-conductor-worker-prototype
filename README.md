@@ -11,7 +11,7 @@ This worker executes wasm file with quickjs engine.
 ### Start the worker server
 ```shell script
 CONDUCTOR_API="http://localhost:8080/api"
-./gradlew -Dconductor.url="${CONDUCTOR_API}" bootRun
+./gradlew -Dconductor.url="${CONDUCTOR_API}" run
 ```
 
 ### Create GLOBAL___js taskdef
@@ -142,12 +142,10 @@ Output of the workflow execution should contain:
 * `args` - can be string, json or array of strings. This will be serialized to array of strings and passed to `wasmtime`. 
 * `outputIsJson` - if set to `true`, output will be interpreted as JSON.
 
-## Bugs, limitations:
+## QuickJs bugs, limitations:
 * stderr that stores logs is not accessible as `console.error` is missing in QuickJS.
 * script is passed as a temporary file instead of stdin. This means a temporary folder
 needs to be created, and wasi runtime is allowed to access it.
-* every execution starts new process, which adds latency cost and is more suitable for a global worker deployment
-instead of per-tenant workers.
 
 
 ## Python
@@ -158,7 +156,7 @@ POST to `/metadata/workflow`
 curl -v \
 -H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
 -H 'Content-Type: application/json' \
-${CONDUCTOR_API}/metadata/workflow -d '
+${CONDUCTOR_API}/metadata/workflow -d @- << 'EOF'
 {
     "name": "py-example",
     "description": "javascript lambdas in running in wasm",
@@ -171,8 +169,8 @@ ${CONDUCTOR_API}/metadata/workflow -d '
             "name": "GLOBAL___py",
             "inputParameters": {
                 "args": "${workflow.input.enter_your_name}",
-                "outputIsJson": "false",
-                "script": "print(argv[1])"
+                "outputIsJson": "true",
+                "script": "import json;print(json.dumps({'name': argv[1]}));"
             },
             "type": "SIMPLE",
             "startDelay": 0,
@@ -181,5 +179,8 @@ ${CONDUCTOR_API}/metadata/workflow -d '
         }
     ]
 }
-'
+EOF
 ```
+
+### Python bugs, limitations:
+* Syntax errors end up having status COMPLETED instead of FAILED_WITH_TERMINAL_ERROR as status code is always 0.

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import prototype.wasmworker.lifecycle.ConductorProperties;
 import prototype.wasmworker.proc.NativeProcessManager;
@@ -67,5 +68,15 @@ public class PythonWorkerTest {
         Map<String, String> expectedResult = Maps.newHashMap("key", "value");
         Object actualResult = taskResult.getOutputData().get("result");
         assertEquals(expectedResult, actualResult);
+    }
+
+    // @TODO Known issue - script with syntax errors ends with exit code 0.
+    @Test()
+    @Disabled
+    public void testSyntaxError() {
+        String script = "x";
+        TaskResult taskResult = execute(script, null, false);
+        assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());
+        assertEquals("exitStatus:1", taskResult.getReasonForIncompletion());
     }
 }

@@ -24,6 +24,10 @@ dependencies {
 	}
 }
 
+task run {
+	dependsOn bootRun
+}
+
 bootRun {
 	systemProperties System.properties
 }
