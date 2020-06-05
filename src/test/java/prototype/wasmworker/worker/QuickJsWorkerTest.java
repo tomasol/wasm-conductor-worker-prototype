@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
-import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import prototype.wasmworker.lifecycle.ConductorProperties;
@@ -23,11 +21,11 @@ public class QuickJsWorkerTest {
 
     static Function<Long, QuickJsWorker> factory = (Long timemoutMillis) ->
             new QuickJsWorker(timemoutMillis, objectMapper, new NativeProcessManager(),
-                    ConductorProperties.DEFAULT_QUICKJS_WASM);
+                    ConductorProperties.DEFAULT_QUICKJS_PATH);
 
     @BeforeEach
     public void beforeEach() {
-        tested = factory.apply(2000l);
+        tested = factory.apply(2000L);
     }
 
     private TaskResult execute(String script, Object args, boolean outputIsJson) {
@@ -48,17 +46,18 @@ public class QuickJsWorkerTest {
         String script = "console.log(1)";
         TaskResult taskResult = execute(script, null, false);
         assertEquals(Status.COMPLETED, taskResult.getStatus());
-        String expectedResult = "1";
+        String expectedResult = "1\n";
         String actualResultString = (String) taskResult.getOutputData().get("result");
         assertEquals(expectedResult, actualResultString);
     }
 
     @Test
     public void testExecutionWithArgs() {
+        // use JSON.stringify to show [ and quotes, qjs outputs just content separated by ','
         String script = "console.log(JSON.stringify(process.argv));";
         TaskResult taskResult = execute(script, new String[]{"arg1"}, false);
         assertEquals(Status.COMPLETED, taskResult.getStatus());
-        String expectedResult = "[\"script.js\",\"arg1\"]";
+        String expectedResult = "[\"script.js\",\"arg1\"]\n";
         String actualResultString = (String) taskResult.getOutputData().get("result");
         assertEquals(expectedResult, actualResultString);
     }
@@ -78,5 +77,16 @@ public class QuickJsWorkerTest {
         TaskResult taskResult = execute(script, null, false);
         assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());
         assertEquals("exitStatus:1", taskResult.getReasonForIncompletion());
+    }
+
+    @Test
+    public void testJson() {
+        tested = factory.apply(20000l);
+        String script = "console.log(JSON.stringify({key:1}));";
+        TaskResult taskResult = execute(script, null, true);
+        assertEquals(Status.COMPLETED, taskResult.getStatus());
+        Map<String, Integer> expectedResult = Maps.newHashMap("key", 1);
+        Object actualResult = taskResult.getOutputData().get("result");
+        assertEquals(expectedResult, actualResult);
     }
 }

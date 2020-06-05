@@ -32,6 +32,17 @@ curl -v \
       "timeoutPolicy": "TIME_OUT_WF",
       "responseTimeoutSeconds": 180,
       "ownerEmail": "foo@bar.baz"
+    },
+    {
+      "name": "GLOBAL___py",
+      "type": "SIMPLE",
+      "retryCount": 3,
+      "retryLogic": "FIXED",
+      "retryDelaySeconds": 10,
+      "timeoutSeconds": 300,
+      "timeoutPolicy": "TIME_OUT_WF",
+      "responseTimeoutSeconds": 180,
+      "ownerEmail": "foo@bar.baz"
     }
 ]
 '
@@ -111,9 +122,8 @@ WORKFLOW_ID=$(curl -v \
 Check result:
 ```shell script
 curl -v \
--H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
-${CONDUCTOR_API}/workflow/${WORKFLOW_ID}
-
+  -H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
+  "${CONDUCTOR_API}/workflow/${WORKFLOW_ID}"
 ```
 
 Output of the workflow execution should contain:
@@ -138,3 +148,38 @@ Output of the workflow execution should contain:
 needs to be created, and wasi runtime is allowed to access it.
 * every execution starts new process, which adds latency cost and is more suitable for a global worker deployment
 instead of per-tenant workers.
+
+
+## Python
+### Create new workflow wasm-example
+POST to `/metadata/workflow` 
+
+```shell script
+curl -v \
+-H "x-auth-organization: fb-test" -H "x-auth-user-role: OWNER" -H "x-auth-user-email: foo" \
+-H 'Content-Type: application/json' \
+${CONDUCTOR_API}/metadata/workflow -d '
+{
+    "name": "py-example",
+    "description": "javascript lambdas in running in wasm",
+    "ownerEmail": "foo@bar.baz",
+    "version": 1,
+    "schemaVersion": 2,
+    "tasks": [
+        {
+            "taskReferenceName": "create_json_ref2",
+            "name": "GLOBAL___py",
+            "inputParameters": {
+                "args": "${workflow.input.enter_your_name}",
+                "outputIsJson": "false",
+                "script": "print(argv[1])"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+        }
+    ]
+}
+'
+```

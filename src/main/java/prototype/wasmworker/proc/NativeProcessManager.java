@@ -35,10 +35,6 @@ public class NativeProcessManager implements ProcessManager {
             String stdErr = new String(process.getErrorStream().readAllBytes());
             logger.trace("Exited with {} in {}ms, stdOut: '{}', stdErr: '{}'", process.exitValue(),
                     stopwatch.elapsed(TimeUnit.MILLISECONDS), stdOut, stdErr);
-            // wasmtime appends \n, remove it
-            if (stdOut.endsWith("\n")) {
-                stdOut = stdOut.substring(0, stdOut.length() - 1);
-            }
             return new ExecutionResult(process.exitValue(), stdOut, stdErr);
         } else {
 
