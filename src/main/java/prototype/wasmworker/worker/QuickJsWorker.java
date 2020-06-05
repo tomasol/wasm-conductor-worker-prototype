@@ -32,12 +32,9 @@ import prototype.wasmworker.proc.ProcessManager.TimeoutException;
 
 // Based on https://wapm.io/package/quickjs
 @Component
-public class QuickJsWorker implements Worker {
+public class QuickJsWorker extends AbstractWorker {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String SCRIPT_JS = "script.js";
-    private final long maxWaitMillis;
-    private final ObjectMapper objectMapper;
-    private final ProcessManager manager;
     private final String quickJsPath;
 
     @Autowired
@@ -46,9 +43,7 @@ public class QuickJsWorker implements Worker {
     }
 
     QuickJsWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager, String quickJsPath) {
-        this.maxWaitMillis = maxWaitMillis;
-        this.objectMapper = objectMapper;
-        this.manager = manager;
+        super(maxWaitMillis, objectMapper, manager);
         this.quickJsPath = quickJsPath;
     }
 
@@ -58,19 +53,18 @@ public class QuickJsWorker implements Worker {
     }
 
     @Override
-    public TaskResult execute(Task task) {
-        logger.debug("Executing started {}", task.getTaskId());
-        logger.trace("Executing started {}", task);
-        TaskResult taskResult;
+    protected Logger getLogger() {
+        return logger;
+    }
+
+    @Override
+    // FIXME: pass script as stdin, remove temp folder handling
+    protected TaskResult executeInner(Task task) throws IOException {
+        Logger logger = getLogger();
         File tempDir = Files.createTempDir();
         logger.trace("Created temp folder {}", tempDir.getAbsolutePath());
         try {
-            taskResult = executeInner(task, tempDir);
-        } catch (Exception e) {
-            logger.error("Unhandled exception in task {}", task.getTaskId(), e);
-            taskResult = new TaskResult(task);
-            taskResult.setReasonForIncompletion("unexpected");
-            taskResult.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
+            return executeInner(task, tempDir);
         } finally {
             try {
                 FileUtils.deleteDirectory(tempDir);
@@ -79,25 +73,6 @@ public class QuickJsWorker implements Worker {
                 logger.warn("Cannot delete temp folder {}", tempDir.getAbsolutePath(), e);
             }
         }
-        logger.debug("Executing finished {} : {}", task.getTaskId(), taskResult);
-        logger.trace("Executing finished {} : {}", task, taskResult);
-        return taskResult;
-    }
-
-    private List<String> parseArgs(String scriptName, Object maybeArgs) throws JsonProcessingException {
-        List<String> result = Lists.newArrayList(scriptName);
-        if (maybeArgs instanceof Map) {
-            // convert to json
-            result.add(objectMapper.writeValueAsString(maybeArgs));
-        } else if (maybeArgs instanceof String[]) {
-            result.addAll(Arrays.asList((String[]) maybeArgs));
-        } else if (maybeArgs != null) {
-            String arg = String.valueOf(maybeArgs);
-            if (!arg.isEmpty()) {
-                result.add(arg);
-            }
-        }
-        return result;
     }
 
     private TaskResult executeInner(Task task, File tempDir) throws IOException {
@@ -126,43 +101,6 @@ public class QuickJsWorker implements Worker {
 
         taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
-        return execute(cmd, outputIsJson, taskResult);
-    }
-
-    private TaskResult execute(List<String> cmd, boolean outputIsJson, TaskResult taskResult) {
-        try {
-            ExecutionResult executionResult = manager.execute(cmd, null, maxWaitMillis, TimeUnit.MILLISECONDS);
-            if (outputIsJson) {
-                try {
-                    Map result = objectMapper.readValue(executionResult.getStdOut(), Map.class);
-                    taskResult.getOutputData().put("result", result);
-                } catch (JsonParseException e) {
-                    taskResult.log("Warning: output is not JSON");
-                    taskResult.getOutputData().put("result", executionResult.getStdOut());
-                }
-            } else {
-                taskResult.getOutputData().put("result", executionResult.getStdOut());
-            }
-            // add logs
-            executionResult.getStdErr().lines().forEach(taskResult::log);
-            if (executionResult.isSuccess()) {
-                taskResult.setStatus(Status.COMPLETED);
-            } else {
-                taskResult.setReasonForIncompletion("exitStatus:" + executionResult.getExitStatus());
-                taskResult.setStatus(Status.FAILED_WITH_TERMINAL_ERROR); // no retries
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            taskResult.setReasonForIncompletion("interrupted");
-            taskResult.setStatus(Status.FAILED);
-        } catch (IOException e) {
-            logger.error("IOException while running {}", cmd, e);
-            taskResult.setReasonForIncompletion("fatal");
-            taskResult.setStatus(Status.FAILED_WITH_TERMINAL_ERROR); // no retries
-        } catch (TimeoutException e) {
-            taskResult.setReasonForIncompletion("timeout");
-            taskResult.setStatus(Status.FAILED);
-        }
-        return taskResult;
+        return execute(cmd, null, outputIsJson, taskResult);
     }
 }
