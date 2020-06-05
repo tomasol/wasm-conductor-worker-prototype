@@ -14,9 +14,9 @@ CONDUCTOR_API="http://localhost:8080/api"
 ./gradlew -Dconductor.url="${CONDUCTOR_API}" run
 ```
 
-### Create GLOBAL___js taskdef
+### Create global taskdefs
 POST to `metadata/taskdefs`:
-Do not use proxy as this is a global taskdef. 
+This call should be executed on conductor directly, bypassing the proxy. 
 ```shell script
 curl -v \
  -H 'Content-Type: application/json' \
