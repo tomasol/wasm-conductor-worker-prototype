@@ -8,12 +8,9 @@ import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +65,8 @@ public class PythonWorker extends AbstractWorker {
         String preamble = String.format("argv = %s;", objectMapper.writeValueAsString(args));
         script = preamble + script;
 
-        List<String> cmd = Lists.newArrayList("wasmer", pythonBinPath, "--mapdir=lib:" + pythonLibPath);
+        List<String> cmd = Lists.newArrayList("wasmer", "run",
+                pythonBinPath, "--mapdir=lib:" + pythonLibPath);
 
         logger.debug("Executing {} with script '{}'", cmd, script);
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));

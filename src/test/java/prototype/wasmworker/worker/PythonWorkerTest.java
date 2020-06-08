@@ -22,7 +22,7 @@ public class PythonWorkerTest {
 
     @BeforeEach
     public void beforeEach() {
-        tested = new PythonWorker(2000, objectMapper, new NativeProcessManager(),
+        tested = new PythonWorker(10000, objectMapper, new NativeProcessManager(),
                 ConductorProperties.DEFAULT_PYTHON_BIN_PATH, ConductorProperties.DEFAULT_PYTHON_LIB_PATH);
     }
 
