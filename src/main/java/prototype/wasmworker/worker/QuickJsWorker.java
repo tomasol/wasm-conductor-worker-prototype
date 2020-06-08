@@ -61,21 +61,6 @@ public class QuickJsWorker extends AbstractWorker {
     // FIXME: pass script as stdin, remove temp folder handling
     protected TaskResult executeInner(Task task) throws IOException {
         Logger logger = getLogger();
-        File tempDir = Files.createTempDir();
-        logger.trace("Created temp folder {}", tempDir.getAbsolutePath());
-        try {
-            return executeInner(task, tempDir);
-        } finally {
-            try {
-                FileUtils.deleteDirectory(tempDir);
-                logger.trace("Deleted temp folder {}", tempDir.getAbsolutePath());
-            } catch (IOException e) {
-                logger.warn("Cannot delete temp folder {}", tempDir.getAbsolutePath(), e);
-            }
-        }
-    }
-
-    private TaskResult executeInner(Task task, File tempDir) throws IOException {
         // TODO careful handling of user input to prevent injection attacks
         TaskResult taskResult = new TaskResult(task);
         List<String> args;
@@ -93,11 +78,8 @@ public class QuickJsWorker extends AbstractWorker {
         String preamble = String.format("const process = {argv:%s};\n", objectMapper.writeValueAsString(args));
         script = preamble + script;
 
-        File scriptFile = new File(tempDir, SCRIPT_JS);
-        Files.asCharSink(scriptFile, StandardCharsets.UTF_8).write(script);
-
-        List<String> cmd = Lists.newArrayList("wasmer", "run", "--dir=" + tempDir.getAbsolutePath(),
-                quickJsPath, "--", scriptFile.getAbsolutePath());
+        List<String> cmd = Lists.newArrayList("wasmer", "run",
+                quickJsPath, "--", "-e", script);
 
         taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));

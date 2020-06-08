@@ -144,9 +144,6 @@ Output of the workflow execution should contain:
 
 ## QuickJs bugs, limitations:
 * stderr that stores logs is not accessible as `console.error` is missing in QuickJS.
-* script is passed as a temporary file instead of stdin. This means a temporary folder
-needs to be created, and wasi runtime is allowed to access it.
-
 
 ## Python
 ### Create new workflow wasm-example
