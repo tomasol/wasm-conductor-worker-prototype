@@ -143,7 +143,6 @@ Output of the workflow execution should contain:
 * `outputIsJson` - if set to `true`, output will be interpreted as JSON.
 
 ## QuickJs bugs, limitations:
-* stderr that stores logs is not accessible as `console.error` is missing in QuickJS.
 
 ## Python
 ### Create new workflow wasm-example

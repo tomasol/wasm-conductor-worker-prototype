@@ -75,13 +75,17 @@ public class QuickJsWorker extends AbstractWorker {
 
         String script = (String) checkNotNull(task.getInputData().get("script"), "Cannot find script");
         // add args to the script
-        String preamble = String.format("const process = {argv:%s};\n", objectMapper.writeValueAsString(args));
+        // add console.error that works same way as console.log - just writes all arguments separated by space
+        // and adds newline.
+        String preamble = String.format("const process = {argv:%s};\n" +
+                "console.error = function(...args) { std.err.puts(args.join(' '));std.err.puts('\\n'); }\n",
+                objectMapper.writeValueAsString(args));
         script = preamble + script;
 
         List<String> cmd = Lists.newArrayList("wasmer", "run",
-                quickJsPath, "--", "-e", script);
+                quickJsPath, "--", "--std", "-e", script);
 
-        taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
+        logger.debug("Executing {}", cmd);
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
         return execute(cmd, null, outputIsJson, taskResult);
     }

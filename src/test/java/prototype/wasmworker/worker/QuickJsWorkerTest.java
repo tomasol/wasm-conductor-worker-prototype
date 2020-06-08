@@ -4,13 +4,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import prototype.wasmworker.lifecycle.ConductorProperties;
 import prototype.wasmworker.proc.NativeProcessManager;
@@ -70,6 +73,7 @@ public class QuickJsWorkerTest {
         assertEquals("exitStatus:1", taskResult.getReasonForIncompletion());
     }
 
+    @Disabled
     @Test
     public void testOOM() {
         tested = factory.apply(20000l);
@@ -81,12 +85,24 @@ public class QuickJsWorkerTest {
 
     @Test
     public void testJson() {
-        tested = factory.apply(20000l);
         String script = "console.log(JSON.stringify({key:1}));";
         TaskResult taskResult = execute(script, null, true);
         assertEquals(Status.COMPLETED, taskResult.getStatus());
         Map<String, Integer> expectedResult = Maps.newHashMap("key", 1);
         Object actualResult = taskResult.getOutputData().get("result");
         assertEquals(expectedResult, actualResult);
+    }
+
+    @Test
+    public void testStdErr() {
+        String script = "console.error('std', 'err');console.log('std', 'out')";
+        TaskResult taskResult = execute(script, null, false);
+        assertEquals(Status.COMPLETED, taskResult.getStatus());
+        Object actualResult = taskResult.getOutputData().get("result");
+        assertEquals("std out\n", actualResult);
+
+        assertEquals(1, taskResult.getLogs().size(), "Expected one entry in " +
+                taskResult.getLogs().stream().map(TaskExecLog::getLog).collect(Collectors.toList()));
+        assertEquals("std err", taskResult.getLogs().get(0).getLog());
     }
 }

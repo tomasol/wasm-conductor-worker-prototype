@@ -70,7 +70,7 @@ public class PythonWorker extends AbstractWorker {
 
         List<String> cmd = Lists.newArrayList("wasmer", pythonBinPath, "--mapdir=lib:" + pythonLibPath);
 
-        taskResult.log(String.format("Executing '%s' with script '%s'", cmd, script));
+        logger.debug("Executing {} with script '{}'", cmd, script);
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
         return execute(cmd, script, outputIsJson, taskResult);
     }
