@@ -6,17 +6,22 @@ This worker executes wasm file with quickjs engine.
 * [wasmer](https://wasmer.io/) on PATH
 * java 14
 
-## Running the example
+## Running the example workflow
 
-### Start the worker server
+### Start the application
+Set a variable to conductor API endpoint directly, bypassing the proxy:
 ```shell script
 CONDUCTOR_API="http://localhost:8080/api"
+```
+Then run
+```shell script
 ./gradlew -Dconductor.url="${CONDUCTOR_API}" run
 ```
+This will start `QuickJsWorker` and `PythonWorker` which
+in turn start polling the conductor.
 
 ### Create global taskdefs
 POST to `metadata/taskdefs`:
-This call should be executed on conductor directly, bypassing the proxy. 
 ```shell script
 curl -v \
  -H 'Content-Type: application/json' \
@@ -142,8 +147,6 @@ Output of the workflow execution should contain:
 * `args` - can be string, json or array of strings. This will be serialized to array of strings and passed to `wasmtime`. 
 * `outputIsJson` - if set to `true`, output will be interpreted as JSON.
 
-## QuickJs bugs, limitations:
-
 ## Python
 ### Create new workflow wasm-example
 POST to `/metadata/workflow` 
@@ -180,3 +183,4 @@ EOF
 
 ### Python bugs, limitations:
 * Syntax errors end up having status COMPLETED instead of FAILED_WITH_TERMINAL_ERROR as status code is always 0.
+* Compared to QuickJs this approach introduces 5-20x worse latency for small scripts.
