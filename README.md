@@ -1,9 +1,11 @@
 # WASM conductor worker (prototype)
 
-This worker executes wasm file with quickjs engine.
+This worker executes 
+* javascript using [quickjs](https://bellard.org/quickjs/) engine compiled to [wasm](https://wapm.io/package/quickjs)
+* python scripts using python 3.6 interpreter compiled to [wasm](https://wapm.io/package/python)
 
 ## Prerequisites
-* [wasmer](https://wasmer.io/) on PATH
+* WebAssembly runtime [wasmer](https://wasmer.io/) on PATH
 * java 14
 
 ## Running the example workflow
