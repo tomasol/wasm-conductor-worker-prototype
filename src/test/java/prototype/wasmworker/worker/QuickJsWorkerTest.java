@@ -105,4 +105,11 @@ public class QuickJsWorkerTest {
                 taskResult.getLogs().stream().map(TaskExecLog::getLog).collect(Collectors.toList()));
         assertEquals("std err", taskResult.getLogs().get(0).getLog());
     }
+
+    @Test
+    public void throwingExceptionShouldMarkTaskAsFailed() {
+        String script = "throw 'e'";
+        TaskResult taskResult = execute(script, null, false);
+        assertEquals(Status.FAILED_WITH_TERMINAL_ERROR, taskResult.getStatus());
+    }
 }

@@ -158,7 +158,7 @@ curl -v \
 ${CONDUCTOR_API}/metadata/workflow -d @- << 'EOF'
 {
     "name": "py-example",
-    "description": "javascript lambdas in running in wasm",
+    "description": "python lambdas in running in wasm",
     "ownerEmail": "foo@bar.baz",
     "version": 1,
     "schemaVersion": 2,
