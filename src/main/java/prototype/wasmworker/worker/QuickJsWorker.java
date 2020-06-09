@@ -35,16 +35,13 @@ import prototype.wasmworker.proc.ProcessManager.TimeoutException;
 public class QuickJsWorker extends AbstractWorker {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String SCRIPT_JS = "script.js";
-    private final String quickJsPath;
+
+    private final QuickJsExecutor quickJsExecutor;
 
     @Autowired
-    public QuickJsWorker(ConductorProperties props, ObjectMapper objectMapper, ProcessManager manager) {
-        this(props.getMaxWaitMillis(), objectMapper, manager, props.getQuickJsPath());
-    }
-
-    QuickJsWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager, String quickJsPath) {
-        super(maxWaitMillis, objectMapper, manager);
-        this.quickJsPath = quickJsPath;
+    public QuickJsWorker(ObjectMapper objectMapper, QuickJsExecutor quickJsExecutor) {
+        super(objectMapper);
+        this.quickJsExecutor = quickJsExecutor;
     }
 
     @Override
@@ -72,21 +69,9 @@ public class QuickJsWorker extends AbstractWorker {
             taskResult.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
             return taskResult;
         }
-
         String script = (String) checkNotNull(task.getInputData().get("script"), "Cannot find script");
-        // add args to the script
-        // add console.error that works same way as console.log - just writes all arguments separated by space
-        // and adds newline.
-        String preamble = String.format("const process = {argv:%s};\n" +
-                "console.error = function(...args) { std.err.puts(args.join(' '));std.err.puts('\\n'); }\n",
-                objectMapper.writeValueAsString(args));
-        script = preamble + script;
-
-        List<String> cmd = Lists.newArrayList("wasmer", "run",
-                quickJsPath, "--", "--std", "-e", script);
-
-        logger.debug("Executing {}", cmd);
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
-        return execute(cmd, null, outputIsJson, taskResult);
+        Executable executable = () -> quickJsExecutor.execute(script, args);
+        return execute(executable, outputIsJson, taskResult);
     }
 }

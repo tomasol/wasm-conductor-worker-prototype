@@ -1,35 +1,27 @@
 package prototype.wasmworker.worker;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import prototype.wasmworker.proc.ProcessManager;
 import prototype.wasmworker.proc.ProcessManager.ExecutionResult;
 import prototype.wasmworker.proc.ProcessManager.TimeoutException;
 
 public abstract class AbstractWorker implements Worker {
-    private final long maxWaitMillis;
     protected final ObjectMapper objectMapper;
-    private final ProcessManager manager;
 
-    public AbstractWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager) {
-        this.maxWaitMillis = maxWaitMillis;
+    public AbstractWorker(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.manager = manager;
     }
 
     abstract protected Logger getLogger();
@@ -72,11 +64,10 @@ public abstract class AbstractWorker implements Worker {
         return result;
     }
 
-    protected TaskResult execute(List<String> cmd, String stdIn, boolean outputIsJson, TaskResult taskResult) {
+    protected TaskResult execute(Executable executable, boolean outputIsJson, TaskResult taskResult) {
         Logger logger = getLogger();
         try {
-            ExecutionResult executionResult = manager.execute(cmd, stdIn,
-                    maxWaitMillis, TimeUnit.MILLISECONDS);
+            ExecutionResult executionResult = executable.execute();
             // add stderr to logs
             executionResult.getStdErr().lines().forEach(taskResult::log);
 
@@ -103,7 +94,7 @@ public abstract class AbstractWorker implements Worker {
             taskResult.setReasonForIncompletion("interrupted");
             taskResult.setStatus(Status.FAILED);
         } catch (IOException e) {
-            logger.error("IOException while running {}", cmd, e);
+            logger.error("IOException", e);
             taskResult.setReasonForIncompletion("fatal");
             taskResult.setStatus(Status.FAILED_WITH_TERMINAL_ERROR); // no retries
         } catch (TimeoutException e) {
@@ -113,4 +104,12 @@ public abstract class AbstractWorker implements Worker {
         return taskResult;
     }
 
+    interface Executable {
+        ExecutionResult execute()
+                throws
+                InterruptedException,
+                IOException,
+                TimeoutException
+                ;
+    }
 }

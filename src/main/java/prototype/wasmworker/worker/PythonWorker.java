@@ -4,37 +4,27 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import prototype.wasmworker.lifecycle.ConductorProperties;
-import prototype.wasmworker.proc.ProcessManager;
 
 // Based on https://wapm.io/package/python
 @Component
 public class PythonWorker extends AbstractWorker {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String SCRIPT_JS = "script.py";
-    private final String pythonBinPath, pythonLibPath;
+    private final PythonExecutor pythonExecutor;
 
     @Autowired
-    public PythonWorker(ConductorProperties props, ObjectMapper objectMapper, ProcessManager manager) {
-        this(props.getMaxWaitMillis(), objectMapper, manager, props.getPythonBinPath(), props.getPythonLibPath());
-    }
-
-    PythonWorker(long maxWaitMillis, ObjectMapper objectMapper, ProcessManager manager,
-                 String pythonBinPath, String pythonLibPath) {
-        super(maxWaitMillis, objectMapper, manager);
-        this.pythonBinPath = pythonBinPath;
-        this.pythonLibPath = pythonLibPath;
+    public PythonWorker(ObjectMapper objectMapper, PythonExecutor pythonExecutor) {
+        super(objectMapper);
+        this.pythonExecutor = pythonExecutor;
     }
 
     @Override
@@ -48,7 +38,7 @@ public class PythonWorker extends AbstractWorker {
     }
 
     @Override
-    protected TaskResult executeInner(Task task) throws IOException {
+    protected TaskResult executeInner(Task task) {
         // TODO careful handling of user input to prevent injection attacks
         TaskResult taskResult = new TaskResult(task);
         List<String> args;
@@ -61,15 +51,8 @@ public class PythonWorker extends AbstractWorker {
             return taskResult;
         }
         String script = (String) checkNotNull(task.getInputData().get("script"), "Cannot find script");
-        // add args to the script
-        String preamble = String.format("argv = %s;", objectMapper.writeValueAsString(args));
-        script = preamble + script;
-
-        List<String> cmd = Lists.newArrayList("wasmer", "run",
-                pythonBinPath, "--mapdir=lib:" + pythonLibPath);
-
-        logger.debug("Executing {} with script '{}'", cmd, script);
         boolean outputIsJson = Boolean.parseBoolean((String) task.getInputData().get("outputIsJson"));
-        return execute(cmd, script, outputIsJson, taskResult);
+        Executable executable = () -> pythonExecutor.execute(script, args);
+        return execute(executable, outputIsJson, taskResult);
     }
 }

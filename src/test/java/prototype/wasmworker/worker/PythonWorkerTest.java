@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
+import java.lang.annotation.Native;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -22,8 +23,8 @@ public class PythonWorkerTest {
 
     @BeforeEach
     public void beforeEach() {
-        tested = new PythonWorker(10000, objectMapper, new NativeProcessManager(),
-                ConductorProperties.DEFAULT_PYTHON_BIN_PATH, ConductorProperties.DEFAULT_PYTHON_LIB_PATH);
+        tested = new PythonWorker(objectMapper, new PythonExecutor(objectMapper, new NativeProcessManager(),
+                new ConductorProperties()));
     }
 
     private TaskResult execute(String script, Object args, boolean outputIsJson) {

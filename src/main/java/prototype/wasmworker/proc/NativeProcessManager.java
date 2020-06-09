@@ -37,7 +37,6 @@ public class NativeProcessManager implements ProcessManager {
                     stopwatch.elapsed(TimeUnit.MILLISECONDS), stdOut, stdErr);
             return new ExecutionResult(process.exitValue(), stdOut, stdErr);
         } else {
-
             String stdOut = new String(process.getInputStream().readNBytes(process.getInputStream().available()));
             String stdErr = new String(process.getInputStream().readNBytes(process.getErrorStream().available()));
             logger.debug("Timeout while executing {}, stdOut: '{}', stdErr: '{}'", cmd, stdOut, stdErr);

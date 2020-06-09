@@ -23,8 +23,10 @@ public class QuickJsWorkerTest {
     QuickJsWorker tested;
 
     static Function<Long, QuickJsWorker> factory = (Long timemoutMillis) ->
-            new QuickJsWorker(timemoutMillis, objectMapper, new NativeProcessManager(),
-                    ConductorProperties.DEFAULT_QUICKJS_PATH);
+            new QuickJsWorker(objectMapper,
+                    new QuickJsExecutor(objectMapper,
+                            new NativeProcessManager(),
+                            new ConductorProperties()));
 
     @BeforeEach
     public void beforeEach() {
