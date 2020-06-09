@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ConductorProperties {
+    public static final String DEFAULT_ISOLATEDVM_PATH = "./src/main/resources/isolatedvm/isovm-linux";
     public static final String DEFAULT_QUICKJS_PATH = "./src/main/resources/quickjs/quickjs.wasm";
     public static final String DEFAULT_PYTHON_BIN_PATH = "./src/main/resources/python/bin/python.wasm";
     public static final String DEFAULT_PYTHON_LIB_PATH = "./src/main/resources/python/lib";
